@@ -13,5 +13,7 @@ public class Calculadora1 {
     public static void main(String[] args) {
         Interfaz ventana = new Interfaz();
         ventana.setVisible(true);
+        System.out.println("Calculadora1 iniciada");
+        System.out.println("Calculadora1 lista para usar");
     }
 }
