@@ -8,6 +8,7 @@ package com.mycompany.calculadora1;
  *
  * @author Edu Nuñez
  */
+import java.awt.Color;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
