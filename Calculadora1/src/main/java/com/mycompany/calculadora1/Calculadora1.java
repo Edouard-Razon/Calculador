@@ -4,6 +4,8 @@
 
 package com.mycompany.calculadora1;
 
+import javax.swing.SwingUtilities;
+
 /**
  *
  * @author Edu Nuñez
@@ -11,9 +13,11 @@ package com.mycompany.calculadora1;
 public class Calculadora1 {
 
     public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> {
         Interfaz ventana = new Interfaz();
         ventana.setVisible(true);
-        System.out.println("Calculadora1 iniciada");
-        System.out.println("Calculadora1 lista para usar");
+    });
+        
     }
+    
 }
