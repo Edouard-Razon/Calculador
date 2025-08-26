@@ -8,11 +8,6 @@ package com.mycompany.calculadora1;
  *
  * @author Edu Nuñez
  */
-import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.Stack;
-import java.util.regex.*;
 public class Interfaz extends javax.swing.JFrame {
 
     /**
@@ -23,6 +18,65 @@ public class Interfaz extends javax.swing.JFrame {
     public Interfaz() {
         initComponents();
     }
+
+        // Método para agregar texto a la pantalla
+        private void agregarPantalla(String texto) {
+            pantalla.setText(pantalla.getText() + texto);
+        }
+
+        // Método para borrar el último carácter
+        private void borrarUltimo() {
+            String txt = pantalla.getText();
+            if (!txt.isEmpty()) {
+                pantalla.setText(txt.substring(0, txt.length() - 1));
+            }
+        }
+
+        // Método para limpiar la pantalla
+        private void limpiarPantalla() {
+            pantalla.setText("");
+        }
+
+        // Método para evaluar la expresión matemática
+        private double evaluar(String expr) {
+            // Reemplazar funciones y constantes
+            expr = expr.replace("sin", "Math.sin")
+                       .replace("cos", "Math.cos")
+                       .replace("tan", "Math.tan")
+                       .replace("log", "Math.log10")
+                       .replace("ln", "Math.log")
+                       .replace("sqrt", "Math.sqrt")
+                       .replace("π", String.valueOf(Math.PI))
+                       .replace("E", String.valueOf(Math.E));
+            // Potencias: x^y -> Math.pow(x,y)
+            expr = expr.replaceAll("(\\d+(?:\\.\\d+)?|\\))\\^(\\d+(?:\\.\\d+)?|\\()", "Math.pow($1,$2)");
+            // Inverso: x^-1 -> 1/x
+            expr = expr.replaceAll("(\\d+(?:\\.\\d+)?|\\))\\^-1", "1/($1)");
+
+            try {
+                javax.script.ScriptEngineManager mgr = new javax.script.ScriptEngineManager();
+                javax.script.ScriptEngine engine = mgr.getEngineByName("JavaScript");
+                Object result = engine.eval(expr);
+                if (result instanceof Number) {
+                    return ((Number) result).doubleValue();
+                } else {
+                    return Double.NaN;
+                }
+            } catch (Exception e) {
+                return Double.NaN;
+            }
+        }
+
+        // Método para mostrar el resultado
+        private void mostrarResultado() {
+            String expr = pantalla.getText();
+            double res = evaluar(expr);
+            if (Double.isNaN(res)) {
+                pantalla.setText("Error");
+            } else {
+                pantalla.setText(String.valueOf(res));
+            }
+        }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -535,11 +589,11 @@ public class Interfaz extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnShiftActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShiftActionPerformed
-        // TODO add your handling code here:
+    limpiarPantalla();
     }//GEN-LAST:event_btnShiftActionPerformed
 
     private void btnInversoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInversoActionPerformed
-        // TODO add your handling code here:
+    borrarUltimo();
     }//GEN-LAST:event_btnInversoActionPerformed
 
     private void btnCuboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCuboActionPerformed
@@ -563,107 +617,107 @@ public class Interfaz extends javax.swing.JFrame {
     }//GEN-LAST:event_btnPotenciaActionPerformed
 
     private void btnLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("log(");
     }//GEN-LAST:event_btnLogActionPerformed
 
     private void btnLnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLnActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("ln(");
     }//GEN-LAST:event_btnLnActionPerformed
 
     private void btnSinActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSinActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("sin(");
     }//GEN-LAST:event_btnSinActionPerformed
 
     private void btnCosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCosActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("cos(");
     }//GEN-LAST:event_btnCosActionPerformed
 
     private void btnTanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTanActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("tan(");
     }//GEN-LAST:event_btnTanActionPerformed
 
     private void btnParentesisIzqActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnParentesisIzqActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("(");
     }//GEN-LAST:event_btnParentesisIzqActionPerformed
 
     private void btnParentesisDerActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnParentesisDerActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla(")");
     }//GEN-LAST:event_btnParentesisDerActionPerformed
 
     private void btn7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn7ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("7");
     }//GEN-LAST:event_btn7ActionPerformed
 
     private void btn4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn4ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("4");
     }//GEN-LAST:event_btn4ActionPerformed
 
     private void btn1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn1ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("1");
     }//GEN-LAST:event_btn1ActionPerformed
 
     private void btn0ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn0ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("0");
     }//GEN-LAST:event_btn0ActionPerformed
 
     private void btn8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn8ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("8");
     }//GEN-LAST:event_btn8ActionPerformed
 
     private void btn5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn5ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("5");
     }//GEN-LAST:event_btn5ActionPerformed
 
     private void btn2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn2ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("2");
     }//GEN-LAST:event_btn2ActionPerformed
 
     private void btnPuntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPuntoActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla(".");
     }//GEN-LAST:event_btnPuntoActionPerformed
 
     private void btn9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn9ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("9");
     }//GEN-LAST:event_btn9ActionPerformed
 
     private void btn6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn6ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("6");
     }//GEN-LAST:event_btn6ActionPerformed
 
     private void btn3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn3ActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("3");
     }//GEN-LAST:event_btn3ActionPerformed
 
     private void btnExpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExpActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("E");
     }//GEN-LAST:event_btnExpActionPerformed
 
     private void btnDelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelActionPerformed
-        // TODO add your handling code here:
+    borrarUltimo();
     }//GEN-LAST:event_btnDelActionPerformed
 
     private void btnDivisionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDivisionActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("/");
     }//GEN-LAST:event_btnDivisionActionPerformed
 
     private void btnMultiplicacionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnMultiplicacionActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("*");
     }//GEN-LAST:event_btnMultiplicacionActionPerformed
 
     private void btnRestaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRestaActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("-");
     }//GEN-LAST:event_btnRestaActionPerformed
 
     private void btnACActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnACActionPerformed
-        // TODO add your handling code here:
+    limpiarPantalla();
     }//GEN-LAST:event_btnACActionPerformed
 
     private void btnSumaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSumaActionPerformed
-        // TODO add your handling code here:
+    agregarPantalla("+");
     }//GEN-LAST:event_btnSumaActionPerformed
 
     private void pantallaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pantallaActionPerformed
-        // TODO add your handling code here:
+    // No hace nada
     }//GEN-LAST:event_pantallaActionPerformed
 
     /**
