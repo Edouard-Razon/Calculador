@@ -4,6 +4,9 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package com.mycompany.calculadora1;
+import java.util.Queue;
+import java.util.LinkedList;
+import java.util.Stack;
 
 /**
  *
@@ -14,10 +17,13 @@ public class Interfaz extends javax.swing.JFrame {
     /**
      * Creates new form Interfaz
      */
-    
+
+     //poner stack metodos: push meter, pop sacar, clear limpiar
+    private boolean shiftActivo=false;  //bandera
     
     public Interfaz() {
         initComponents();
+        pantalla.setEditable(false); //para que acepte solo botones de la calcu
     }
 
         // Método para agregar texto a la pantalla
@@ -40,43 +46,105 @@ public class Interfaz extends javax.swing.JFrame {
 
         // Método para evaluar la expresión matemática
         private double evaluar(String expr) {
-            // Reemplazar funciones y constantes
-            expr = expr.replace("sin", "Math.sin")
-                       .replace("cos", "Math.cos")
-                       .replace("tan", "Math.tan")
-                       .replace("log", "Math.log10")
-                       .replace("ln", "Math.log")
-                       .replace("sqrt", "Math.sqrt")
-                       .replace("π", String.valueOf(Math.PI))
-                       .replace("E", String.valueOf(Math.E));
-            // Potencias: x^y -> Math.pow(x,y)
-            expr = expr.replaceAll("(\\d+(?:\\.\\d+)?|\\))\\^(\\d+(?:\\.\\d+)?|\\()", "Math.pow($1,$2)");
-            // Inverso: x^-1 -> 1/x
-            expr = expr.replaceAll("(\\d+(?:\\.\\d+)?|\\))\\^-1", "1/($1)");
-
-            try {
-                javax.script.ScriptEngineManager mgr = new javax.script.ScriptEngineManager();
-                javax.script.ScriptEngine engine = mgr.getEngineByName("JavaScript");
-                Object result = engine.eval(expr);
-                if (result instanceof Number) {
-                    return ((Number) result).doubleValue();
-                } else {
-                    return Double.NaN;
-                }
-            } catch (Exception e) {
-                return Double.NaN;
+        expr = expr.replace("π", String.valueOf(Math.PI));
+        String[] tokens = tokenize(expr);
+        Queue<String> output = new LinkedList<>();
+        Stack<String> ops = new Stack<>();
+        for (String t: tokens) {
+            if (t.isEmpty()) continue;
+            if (isNumber(t)) output.add(t);
+            else if (isFunc(t)) ops.push(t);
+            else if (t.equals(",")) {
+                while (!ops.isEmpty() && !ops.peek().equals("(")) output.add(ops.pop());
+            } else if (isOperator(t)) {
+                while (!ops.isEmpty() && isOperator(ops.peek()) && precedence(t) <= precedence(ops.peek()))
+                    output.add(ops.pop());
+                ops.push(t);
+            } else if (t.equals("(")) ops.push(t);
+            else if (t.equals(")")) {
+                while (!ops.isEmpty() && !ops.peek().equals("(")) output.add(ops.pop());
+                if (!ops.isEmpty() && ops.peek().equals("(")) ops.pop();
+                if (!ops.isEmpty() && isFunc(ops.peek())) output.add(ops.pop());
             }
         }
+        while (!ops.isEmpty()) output.add(ops.pop());
+        Stack<Double> stack = new Stack<>();
+        for (String t: output) {
+            if (isNumber(t)) stack.push(Double.valueOf(t));
+            else if (isOperator(t)) {
+                double b = stack.pop(), a = stack.pop();
+                switch (t) {
+                    case "+": stack.push(a+b); break;
+                    case "-": stack.push(a-b); break;
+                    case "*": stack.push(a*b); break;
+                    case "/": stack.push(a/b); break;
+                    case "^": stack.push(Math.pow(a,b)); break;
+                }
+            } else if (isFunc(t)) {
+                double a = stack.pop();
+                switch (t) {
+                    case "sin": stack.push(Math.sin(a)); break;
+                    case "cos": stack.push(Math.cos(a)); break;
+                    case "tan": stack.push(Math.tan(a)); break;
+                    case "asin": stack.push(Math.asin(a)); break;
+                    case "acos": stack.push(Math.acos(a)); break;
+                    case "atan": stack.push(Math.atan(a)); break;
+                    case "sqrt": stack.push(Math.sqrt(a)); break;
+                    case "cbrt": stack.push(Math.cbrt(a)); break;
+                    case "log": stack.push(Math.log10(a)); break;
+                    case "ln": stack.push(Math.log(a)); break;
+                    case "exp": stack.push(Math.exp(a)); break;
+                }
+            } else if (t.equals("!")) {
+                int n = stack.pop().intValue();
+                stack.push((double) factorial(n));
+            }
+        }
+        return stack.pop();
+    }
+
+    private String[] tokenize(String expr) {
+    expr = expr.replaceAll("([()+\\-*/^!,])", " $1 ");
+        expr = expr.replaceAll("\\s+", " ");
+        return expr.trim().split(" ");
+    }
+    // Método factorial necesario para el evaluador
+    private long factorial(int n) {
+        if (n < 0) throw new ArithmeticException("Negativo");
+        long r=1; for (int i=2;i<=n;i++) r*=i;
+        return r;
+    }
+
+    private boolean isNumber(String t) {
+        return t.matches("-?\\d+(\\.\\d+)?");
+    }
+
+    private boolean isFunc(String t) {
+        return java.util.Arrays.asList("sin","cos","tan","asin","acos","atan","sqrt","cbrt","log","ln","exp").contains(t);
+    }
+
+    private boolean isOperator(String t) {
+        return java.util.Arrays.asList("+","-","*","/","^").contains(t);
+    }
+
+    private int precedence(String op) {
+        switch (op) {
+            case "+": case "-": return 1;
+            case "*": case "/": return 2;
+            case "^": return 3;
+        }
+        return 0;
+    }
 
         // Método para mostrar el resultado
         private void mostrarResultado() {
-            String expr = pantalla.getText();
-            double res = evaluar(expr);
-            if (Double.isNaN(res)) {
-                pantalla.setText("Error");
-            } else {
-                pantalla.setText(String.valueOf(res));
-            }
+        try {
+            double res = evaluar(pantalla.getText());
+            if (res == (long)res) pantalla.setText(String.valueOf((long)res));
+            else pantalla.setText(String.valueOf(res));
+        } catch (Exception e) {
+            pantalla.setText("Error");
+        }
         }
 
     /**
@@ -596,39 +664,43 @@ public class Interfaz extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnShiftActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShiftActionPerformed
-    limpiarPantalla();
+    btnShiftActionPerformed(evt);
     }//GEN-LAST:event_btnShiftActionPerformed
 
     private void btnInversoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInversoActionPerformed
-    borrarUltimo();
+    btnInversoActionPerformed(evt);
     }//GEN-LAST:event_btnInversoActionPerformed
 
     private void btnCuboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCuboActionPerformed
-        // TODO add your handling code here:
+        btnCuboActionPerformed(evt);
     }//GEN-LAST:event_btnCuboActionPerformed
 
     private void btnRaizActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRaizActionPerformed
-        // TODO add your handling code here:
+        btnRaizActionPerformed(evt);
     }//GEN-LAST:event_btnRaizActionPerformed
 
     private void btnOnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOnActionPerformed
-        // TODO add your handling code here:
+        btnOnActionPerformed(evt);
     }//GEN-LAST:event_btnOnActionPerformed
 
     private void btnCuadradoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCuadradoActionPerformed
-        // TODO add your handling code here:
+    // Toma el texto actual y agrega ^2 al final
+    pantalla.setText(pantalla.getText() + "^2");
+        
     }//GEN-LAST:event_btnCuadradoActionPerformed
 
     private void btnPotenciaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPotenciaActionPerformed
-        // TODO add your handling code here:
+        btnPotenciaActionPerformed(evt);
     }//GEN-LAST:event_btnPotenciaActionPerformed
 
     private void btnLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogActionPerformed
     agregarPantalla("log(");
+    btnLogActionPerformed(evt);
     }//GEN-LAST:event_btnLogActionPerformed
 
     private void btnLnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLnActionPerformed
     agregarPantalla("ln(");
+    
     }//GEN-LAST:event_btnLnActionPerformed
 
     private void btnSinActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSinActionPerformed
