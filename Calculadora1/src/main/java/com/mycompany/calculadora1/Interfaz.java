@@ -4,6 +4,7 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
  */
 package com.mycompany.calculadora1;
+import java.awt.Color;
 import java.util.Queue;
 import java.util.LinkedList;
 import java.util.Stack;
@@ -20,33 +21,52 @@ public class Interfaz extends javax.swing.JFrame {
 
      //poner stack metodos: push meter, pop sacar, clear limpiar
     private boolean shiftActivo=false;  //bandera
+    private boolean encendida = false;
     
     public Interfaz() {
         initComponents();
         pantalla.setEditable(false); //para que acepte solo botones de la calcu
+    System.out.println("DEBUG: Interfaz constructor executed");
     }
 
         // Método para agregar texto a la pantalla
         private void agregarPantalla(String texto) {
-            pantalla.setText(pantalla.getText() + texto);
+            if (encendida && pantalla.isEditable()) {
+                pantalla.setText(pantalla.getText() + texto);
+            }
         }
 
         // Método para borrar el último carácter
         private void borrarUltimo() {
-            String txt = pantalla.getText();
-            if (!txt.isEmpty()) {
-                pantalla.setText(txt.substring(0, txt.length() - 1));
+            if (encendida && pantalla.isEditable()) {
+                String txt = pantalla.getText();
+                if (!txt.isEmpty()) {
+                    pantalla.setText(txt.substring(0, txt.length() - 1));
+                }
             }
         }
 
         // Método para limpiar la pantalla
         private void limpiarPantalla() {
-            pantalla.setText("");
+            if (encendida && pantalla.isEditable()) {
+                pantalla.setText("");
+            }
         }
 
         // Método para evaluar la expresión matemática
         private double evaluar(String expr) {
-        expr = expr.replace("π", String.valueOf(Math.PI));
+    expr = expr.replace("π", String.valueOf(Math.PI));
+    expr = expr.replace("asin", "asin");
+    expr = expr.replace("acos", "acos");
+    expr = expr.replace("atan", "atan");
+    expr = expr.replace("x!", "!");
+    expr = expr.replace("∛", "cbrt");
+    expr = expr.replace("√", "sqrt");
+    // Soporte para inverso: X^-1 => (1/(X)) – soporta números, decimales o expresiones entre paréntesis
+    // Primera: expresiones entre paréntesis, por ejemplo (2+3)^-1
+    expr = expr.replaceAll("(\\([^()]+\\))\\^-1", "(1/($1))");
+    // Segunda: números con decimales o enteros, por ejemplo 7^-1 o 3.5^-1
+    expr = expr.replaceAll("(\\d+(?:\\.\\d+)?)\\^-1", "(1/($1))");
         String[] tokens = tokenize(expr);
         Queue<String> output = new LinkedList<>();
         Stack<String> ops = new Stack<>();
@@ -120,7 +140,7 @@ public class Interfaz extends javax.swing.JFrame {
     }
 
     private boolean isFunc(String t) {
-        return java.util.Arrays.asList("sin","cos","tan","asin","acos","atan","sqrt","cbrt","log","ln","exp").contains(t);
+    return java.util.Arrays.asList("sin","cos","tan","asin","acos","atan","sqrt","cbrt","log","ln","exp").contains(t);
     }
 
     private boolean isOperator(String t) {
@@ -664,11 +684,38 @@ public class Interfaz extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnShiftActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShiftActionPerformed
-    btnShiftActionPerformed(evt);
+    shiftActivo = !shiftActivo;
+    btnShift.setBackground(shiftActivo ? Color.YELLOW : null);
+
+    if (shiftActivo) {
+        btnSin.setText("asin");
+        btnCos.setText("acos");
+        btnTan.setText("atan");
+        btnCubo.setText("x!");   // factorial
+        btnRaiz.setText("∛");    // raíz cúbica
+        btnInverso.setText("x!");
+    } else {
+        btnSin.setText("sin");
+        btnCos.setText("cos");
+        btnTan.setText("tan");
+        btnCubo.setText("x³");
+        btnRaiz.setText("√");
+        btnInverso.setText("x^-1");
+    }
     }//GEN-LAST:event_btnShiftActionPerformed
 
     private void btnInversoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInversoActionPerformed
-    btnInversoActionPerformed(evt);
+    if (!encendida || !pantalla.isEditable()) return;
+    String txt = pantalla.getText();
+    if (!txt.isEmpty() && isNumber(txt)) {
+        if (shiftActivo) {
+            pantalla.setText(txt + "!");
+            System.out.println("DEBUG: pantalla after factorial button -> " + pantalla.getText());
+        } else {
+            pantalla.setText(txt + "^-1");
+            System.out.println("DEBUG: pantalla after inverse button -> " + pantalla.getText());
+        }
+    }
     }//GEN-LAST:event_btnInversoActionPerformed
 
     private void btnCuboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCuboActionPerformed
@@ -680,7 +727,16 @@ public class Interfaz extends javax.swing.JFrame {
     }//GEN-LAST:event_btnRaizActionPerformed
 
     private void btnOnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOnActionPerformed
-        btnOnActionPerformed(evt);
+        encendida = !encendida;
+        if (encendida) {
+            pantalla.setText("");
+            pantalla.setEditable(true);
+            pantalla.setBackground(Color.WHITE);
+        } else {
+            pantalla.setText("");
+            pantalla.setEditable(false);
+            pantalla.setBackground(Color.LIGHT_GRAY);
+        }
     }//GEN-LAST:event_btnOnActionPerformed
 
     private void btnCuadradoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCuadradoActionPerformed
@@ -732,43 +788,43 @@ public class Interfaz extends javax.swing.JFrame {
     }//GEN-LAST:event_btn4ActionPerformed
 
     private void btn1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn1ActionPerformed
-    agregarPantalla("1");
+    if (encendida && pantalla.isEditable()) agregarPantalla("1");
     }//GEN-LAST:event_btn1ActionPerformed
 
     private void btn0ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn0ActionPerformed
-    agregarPantalla("0");
+    if (encendida && pantalla.isEditable()) agregarPantalla("0");
     }//GEN-LAST:event_btn0ActionPerformed
 
     private void btn8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn8ActionPerformed
-    agregarPantalla("8");
+    if (encendida && pantalla.isEditable()) agregarPantalla("8");
     }//GEN-LAST:event_btn8ActionPerformed
 
     private void btn5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn5ActionPerformed
-    agregarPantalla("5");
+    if (encendida && pantalla.isEditable()) agregarPantalla("5");
     }//GEN-LAST:event_btn5ActionPerformed
 
     private void btn2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn2ActionPerformed
-    agregarPantalla("2");
+    if (encendida && pantalla.isEditable()) agregarPantalla("2");
     }//GEN-LAST:event_btn2ActionPerformed
 
     private void btnPuntoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPuntoActionPerformed
-    agregarPantalla(".");
+    if (encendida && pantalla.isEditable()) agregarPantalla(".");
     }//GEN-LAST:event_btnPuntoActionPerformed
 
     private void btn9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn9ActionPerformed
-    agregarPantalla("9");
+    if (encendida && pantalla.isEditable()) agregarPantalla("9");
     }//GEN-LAST:event_btn9ActionPerformed
 
     private void btn6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn6ActionPerformed
-    agregarPantalla("6");
+    if (encendida && pantalla.isEditable()) agregarPantalla("6");
     }//GEN-LAST:event_btn6ActionPerformed
 
     private void btn3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btn3ActionPerformed
-    agregarPantalla("3");
+    if (encendida && pantalla.isEditable()) agregarPantalla("3");
     }//GEN-LAST:event_btn3ActionPerformed
 
     private void btnExpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExpActionPerformed
-    agregarPantalla("E");
+    if (encendida && pantalla.isEditable()) agregarPantalla("E");
     }//GEN-LAST:event_btnExpActionPerformed
 
     private void btnDelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelActionPerformed
@@ -834,7 +890,9 @@ public class Interfaz extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
+                System.out.println("DEBUG: About to create Interfaz and setVisible(true)");
                 new Interfaz().setVisible(true);
+                System.out.println("DEBUG: setVisible(true) returned");
             }
         });
     }
