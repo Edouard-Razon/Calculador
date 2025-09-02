@@ -55,19 +55,41 @@ public class Interfaz extends javax.swing.JFrame {
 
         // Método para evaluar la expresión matemática
         private double evaluar(String expr) {
-    expr = expr.replace("π", String.valueOf(Math.PI));
+        System.out.println("DEBUG: evaluar - entrada='" + expr + "'");
+        expr = expr.replace("π", String.valueOf(Math.PI));
     expr = expr.replace("asin", "asin");
     expr = expr.replace("acos", "acos");
     expr = expr.replace("atan", "atan");
     expr = expr.replace("x!", "!");
     expr = expr.replace("∛", "cbrt");
-    expr = expr.replace("√", "sqrt");
+    // Si el usuario escribió una notación "3√" puede haber sido transformada a "3sqrt" arriba;
+    // soportamos ambos formatos convirtiéndolos a cbrt(...)
+    expr = expr.replaceAll("3sqrt\\(([^)]+)\\)", "cbrt($1)");
+    expr = expr.replaceAll("3sqrt([0-9]+\\.?[0-9]*)", "cbrt($1)");
+    // Transformaciones genéricas para raíz n y raíz cuadrada:
+    // Primero: caso n√(expr) -> (expr)^(1/n)
+    expr = expr.replaceAll("([0-9]+)√\\(([^)]+)\\)", "($2)^(1/$1)");
+    // n√number -> (number)^(1/n)
+    expr = expr.replaceAll("([0-9]+)√([0-9]+\\.?[0-9]*)", "($2)^(1/$1)");
+    // Ahora casos sin índice: √(expr) -> (expr)^(1/2)
+    expr = expr.replaceAll("√\\(([^)]+)\\)", "($1)^(1/2)");
+    // √number -> (number)^(1/2)
+    expr = expr.replaceAll("√([0-9]+\\.?[0-9]*)", "($1)^(1/2)");
     // Soporte para inverso: X^-1 => (1/(X)) – soporta números, decimales o expresiones entre paréntesis
     // Primera: expresiones entre paréntesis, por ejemplo (2+3)^-1
     expr = expr.replaceAll("(\\([^()]+\\))\\^-1", "(1/($1))");
     // Segunda: números con decimales o enteros, por ejemplo 7^-1 o 3.5^-1
     expr = expr.replaceAll("(\\d+(?:\\.\\d+)?)\\^-1", "(1/($1))");
-        String[] tokens = tokenize(expr);
+    // Soporte para notación exponencial tipo 1.23E-4: colapsar posibles espacios entre E y signo/dígitos
+    expr = expr.replaceAll("(\\d+(?:\\.\\d+)?)[eE]\\s*([+-]?\\d+)", "$1E$2");
+            // Reemplazo para notación de raíz cúbica literal "3√expr" o "3√(expr)" -> cbrt(expr)
+            // Caso con paréntesis: 3√(expr)
+            expr = expr.replaceAll("3√\\(([^)]+)\\)", "cbrt($1)");
+            // Caso con número o expresión simple sin paréntesis: 3√8 -> cbrt(8)
+            expr = expr.replaceAll("3√([0-9]+\\.?[0-9]*)", "cbrt($1)");
+    System.out.println("DEBUG: evaluar - normalizada='" + expr + "'");
+    String[] tokens = tokenize(expr);
+    System.out.println("DEBUG: evaluar - tokens=" + java.util.Arrays.toString(tokens));
         Queue<String> output = new LinkedList<>();
         Stack<String> ops = new Stack<>();
         for (String t: tokens) {
@@ -80,6 +102,9 @@ public class Interfaz extends javax.swing.JFrame {
                 while (!ops.isEmpty() && isOperator(ops.peek()) && precedence(t) <= precedence(ops.peek()))
                     output.add(ops.pop());
                 ops.push(t);
+                } else if (t.equals("!")) {
+                    // Factorial is a postfix operator — push directly to output
+                    output.add(t);
             } else if (t.equals("(")) ops.push(t);
             else if (t.equals(")")) {
                 while (!ops.isEmpty() && !ops.peek().equals("(")) output.add(ops.pop());
@@ -88,10 +113,12 @@ public class Interfaz extends javax.swing.JFrame {
             }
         }
         while (!ops.isEmpty()) output.add(ops.pop());
+    System.out.println("DEBUG: evaluar - postfix=" + output.toString());
         Stack<Double> stack = new Stack<>();
         for (String t: output) {
             if (isNumber(t)) stack.push(Double.valueOf(t));
             else if (isOperator(t)) {
+                if (stack.size() < 2) throw new IllegalArgumentException("Operador faltante");
                 double b = stack.pop(), a = stack.pop();
                 switch (t) {
                     case "+": stack.push(a+b); break;
@@ -101,6 +128,7 @@ public class Interfaz extends javax.swing.JFrame {
                     case "^": stack.push(Math.pow(a,b)); break;
                 }
             } else if (isFunc(t)) {
+                if (stack.isEmpty()) throw new IllegalArgumentException("Función sin argumento");
                 double a = stack.pop();
                 switch (t) {
                     case "sin": stack.push(Math.sin(a)); break;
@@ -116,16 +144,21 @@ public class Interfaz extends javax.swing.JFrame {
                     case "exp": stack.push(Math.exp(a)); break;
                 }
             } else if (t.equals("!")) {
+                if (stack.isEmpty()) throw new IllegalArgumentException("Factorial sin operando");
                 int n = stack.pop().intValue();
                 stack.push((double) factorial(n));
             }
         }
+        if (stack.isEmpty()) throw new IllegalArgumentException("Expresión vacía");
         return stack.pop();
     }
 
     private String[] tokenize(String expr) {
+    // No separar el signo + o - que forma parte de un exponente, por ejemplo 1E-3
     expr = expr.replaceAll("([()+\\-*/^!,])", " $1 ");
         expr = expr.replaceAll("\\s+", " ");
+        // unir tokens del tipo '1E' '-' '3' en '1E-3' ya que el replaceAll anterior pudo separar
+        expr = expr.replaceAll("(\\d+(?:\\.\\d+)?E)( )([+-]) (\\d+)", "$1$3$4");
         return expr.trim().split(" ");
     }
     // Método factorial necesario para el evaluador
@@ -136,7 +169,8 @@ public class Interfaz extends javax.swing.JFrame {
     }
 
     private boolean isNumber(String t) {
-        return t.matches("-?\\d+(\\.\\d+)?");
+        // Acepta notación con exponente: 123, -123.45, 1.23E4, -1.2e-3
+        return t.matches("-?\\d+(\\.\\d+)?([eE][+-]?\\d+)?");
     }
 
     private boolean isFunc(String t) {
@@ -159,13 +193,211 @@ public class Interfaz extends javax.swing.JFrame {
         // Método para mostrar el resultado
         private void mostrarResultado() {
         try {
-            double res = evaluar(pantalla.getText());
+            System.out.println("DEBUG: mostrarResultado - entrada pantalla='" + pantalla.getText() + "'");
+            String entrada = pantalla.getText();
+            if (entrada == null) entrada = "";
+            // Validaciones: si hay una llamada a función que requiere un argumento pero no lo tiene,
+            // informar "no es un numero".
+            String[] funcs = new String[]{"sin","cos","tan","asin","acos","atan","log","ln","sqrt","cbrt","exp"};
+            for (String f: funcs) {
+                if (entrada.contains(f + "(")) {
+                    String arg = extraerPrimerArgumento(entrada, f);
+                    if (arg == null || arg.trim().isEmpty()) {
+                        pantalla.setText("no es un numero");
+                        return;
+                    }
+                }
+            }
+            // Validar símbolo de raíz '√' seguido por un operando válido
+            int idxRaiz = entrada.indexOf('√');
+            if (idxRaiz >= 0) {
+                if (idxRaiz == entrada.length() - 1) {
+                    pantalla.setText("no es un numero");
+                    return;
+                } else {
+                    char nc = entrada.charAt(idxRaiz + 1);
+                    if (!(Character.isDigit(nc) || nc == '(' || nc == 'π' || nc == '.' || nc == '-')) {
+                        pantalla.setText("no es un numero");
+                        return;
+                    }
+                }
+            }
+
+            double res = evaluar(entrada);
+            // Si la expresión es una función trig inversa, intentar mostrar resultado como múltiplo de π
+            if (entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
+                String func = null;
+                if (entrada.contains("asin(")) func = "asin";
+                else if (entrada.contains("acos(")) func = "acos";
+                else if (entrada.contains("atan(")) func = "atan";
+                String arg = extraerPrimerArgumento(entrada, func);
+                String asPi = representarMultiploDePi(res);
+                if (arg != null && arg.contains("π")) {
+                    // Si el argumento contiene π, requerimos una representación en múltiplos racionales de π
+                    if (asPi != null) {
+                        pantalla.setText(asPi);
+                        return;
+                    } else {
+                        pantalla.setText("no existe numero");
+                        return;
+                    }
+                } else {
+                    // Si no hay π en el argumento, mostramos la representación si existe, o caemos al resultado numérico
+                    if (asPi != null) {
+                        pantalla.setText(asPi);
+                        return;
+                    }
+                }
+            }
+            // Para funciones trigonométricas directas: si el argumento contiene 'π',
+            // requerimos un valor directo (p/q·π) — si no existe, mostrar "no existe numero".
+            if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(")) {
+                String func = null;
+                if (entrada.contains("sin(")) func = "sin";
+                else if (entrada.contains("cos(")) func = "cos";
+                else if (entrada.contains("tan(")) func = "tan";
+                String arg = extraerPrimerArgumento(entrada, func);
+                if (arg != null && arg.contains("π")) {
+                    String fmt = formatearTrigConPi(entrada);
+                    if (fmt == null) {
+                        pantalla.setText("no existe numero");
+                        return;
+                    } else {
+                        pantalla.setText(fmt);
+                        return;
+                    }
+                }
+                // Si el argumento no contiene π, dejamos que la evaluación numérica normal ocurra
+            }
             if (res == (long)res) pantalla.setText(String.valueOf((long)res));
             else pantalla.setText(String.valueOf(res));
         } catch (Exception e) {
+            System.out.println("DEBUG: mostrarResultado - excepción: " + e.getMessage());
             pantalla.setText("Error");
         }
         }
+
+    // Intenta representar un ángulo (radianes) como múltiplo racional de PI.
+    // Devuelve cadenas como "π", "π/2", "-π/6", "0" o null si no se puede aproximar.
+    private String representarMultiploDePi(double ang) {
+        double pi = Math.PI;
+        double ratio = ang / pi;
+        double tol = 1e-10;
+        // Normalizar: reducir al rango [-1,1] considerando múltiplos enteros
+        // pero nos interesa representar cualquier múltiplo p/q, incluso >1.
+        for (int q = 1; q <= 24; q++) {
+            double pD = Math.round(ratio * q);
+            int p = (int) pD;
+            double approx = ((double)p / q) * pi;
+            if (Math.abs(ang - approx) < tol) {
+                // simplificar signo
+                if (p == 0) return "0";
+                StringBuilder sb = new StringBuilder();
+                if (p < 0) sb.append("-");
+                int absP = Math.abs(p);
+                if (absP == q) sb.append("π");
+                else if (absP == 1) sb.append("π/" + q);
+                else sb.append(absP + "π/" + q);
+                return sb.toString();
+            }
+        }
+        // también tolerar ángulos cercanos a 2π multiples y representar como multiples enteros cuando corresponda
+        double eps = 1e-10;
+        double k = Math.round(ang / (2*pi));
+        if (Math.abs(ang - k*(2*pi)) < eps) {
+            long kk = (long) k;
+            return kk + "·2π";
+        }
+        return null;
+    }
+
+    // Extrae el primer argumento entre paréntesis de la primera aparición de funcName en la entrada.
+    private String extraerPrimerArgumento(String entrada, String funcName) {
+        int idx = entrada.indexOf(funcName + "(");
+        if (idx < 0) return null;
+        int start = entrada.indexOf('(', idx);
+        if (start < 0) return null;
+        int depth = 1;
+        StringBuilder sb = new StringBuilder();
+        for (int i = start + 1; i < entrada.length(); i++) {
+            char c = entrada.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') {
+                depth--;
+                if (depth == 0) return sb.toString();
+            }
+            if (depth > 0) sb.append(c);
+        }
+        return null;
+    }
+
+    // Intenta formatear el resultado de sin/cos/tan usando π cuando el argumento es múltiplo racional de π.
+    // Devuelve null si no se aplica un formateo especial y se debe usar el resultado numérico normal.
+    private String formatearTrigConPi(String entrada) {
+        try {
+            if (entrada.contains("sin(")) {
+                String arg = extraerPrimerArgumento(entrada, "sin");
+                if (arg == null) return null;
+                double val = evaluar(arg);
+                // Normalizar por pi
+                double ratio = val / Math.PI;
+                // buscar p/q racional simple
+                for (int q = 1; q <= 24; q++) {
+                    double pD = Math.round(ratio * q);
+                    int p = (int) pD;
+                    double approx = ((double)p / q) * Math.PI;
+                    if (Math.abs(val - approx) < 1e-10) {
+                        // calcular sin(p*pi/q) con precisión y redondear a 0/±1 cuando corresponda
+                        double r = Math.sin(approx);
+                        if (Math.abs(r) < 1e-12) return "0";
+                        if (Math.abs(Math.abs(r) - 1.0) < 1e-12) return String.valueOf((int)Math.signum(r));
+                        // en caso general, devolver valor numérico formateado
+                        return String.valueOf(r);
+                    }
+                }
+            }
+            if (entrada.contains("cos(")) {
+                String arg = extraerPrimerArgumento(entrada, "cos");
+                if (arg == null) return null;
+                double val = evaluar(arg);
+                double ratio = val / Math.PI;
+                for (int q = 1; q <= 24; q++) {
+                    double pD = Math.round(ratio * q);
+                    int p = (int) pD;
+                    double approx = ((double)p / q) * Math.PI;
+                    if (Math.abs(val - approx) < 1e-10) {
+                        double r = Math.cos(approx);
+                        if (Math.abs(r) < 1e-12) return "0";
+                        if (Math.abs(Math.abs(r) - 1.0) < 1e-12) return String.valueOf((int)Math.signum(r));
+                        return String.valueOf(r);
+                    }
+                }
+            }
+            if (entrada.contains("tan(")) {
+                String arg = extraerPrimerArgumento(entrada, "tan");
+                if (arg == null) return null;
+                double val = evaluar(arg);
+                double ratio = val / Math.PI;
+                for (int q = 1; q <= 24; q++) {
+                    double pD = Math.round(ratio * q);
+                    int p = (int) pD;
+                    double approx = ((double)p / q) * Math.PI;
+                    if (Math.abs(val - approx) < 1e-10) {
+                        double cosv = Math.cos(approx);
+                        if (Math.abs(cosv) < 1e-12) return "Undefined"; // tan indefinida
+                        double r = Math.tan(approx);
+                        if (Math.abs(r) < 1e-12) return "0";
+                        return String.valueOf(r);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            // si algo falla, no interrumpir; devolver null para proceder con evaluación normal
+            System.out.println("DEBUG: formatearTrigConPi excepción: " + e.getMessage());
+            return null;
+        }
+        return null;
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -252,7 +484,7 @@ public class Interfaz extends javax.swing.JFrame {
             }
         });
 
-        btnCubo.setText("x^3");
+    btnCubo.setText("x³");
         btnCubo.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnCuboActionPerformed(evt);
@@ -691,9 +923,11 @@ public class Interfaz extends javax.swing.JFrame {
         btnSin.setText("asin");
         btnCos.setText("acos");
         btnTan.setText("atan");
-        btnCubo.setText("x!");   // factorial
+    btnCubo.setText("∛");   // raíz cúbica cuando Shift
         btnRaiz.setText("∛");    // raíz cúbica
         btnInverso.setText("x!");
+    btnPotencia.setText("√");
+    btnExp.setText("π");
     } else {
         btnSin.setText("sin");
         btnCos.setText("cos");
@@ -701,29 +935,61 @@ public class Interfaz extends javax.swing.JFrame {
         btnCubo.setText("x³");
         btnRaiz.setText("√");
         btnInverso.setText("x^-1");
+    btnPotencia.setText("x^y");
+    btnExp.setText("EXP");
     }
     }//GEN-LAST:event_btnShiftActionPerformed
 
     private void btnInversoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnInversoActionPerformed
-    if (!encendida || !pantalla.isEditable()) return;
+    if (!encendida || !pantalla.isEditable()) {
+        javax.swing.JOptionPane.showMessageDialog(this, "Enciende la calculadora antes de operar (botón ON)", "Info", javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
     String txt = pantalla.getText();
-    if (!txt.isEmpty() && isNumber(txt)) {
-        if (shiftActivo) {
-            pantalla.setText(txt + "!");
-            System.out.println("DEBUG: pantalla after factorial button -> " + pantalla.getText());
-        } else {
-            pantalla.setText(txt + "^-1");
-            System.out.println("DEBUG: pantalla after inverse button -> " + pantalla.getText());
-        }
+    if (txt == null) txt = "";
+    if (txt.isEmpty()) {
+        // nothing to invert or factorial
+        return;
+    }
+    // Añadir el sufijo aunque la pantalla tenga una expresión (ej: (2+3) o 7)
+    if (shiftActivo) {
+        pantalla.setText(txt + "!");
+        System.out.println("DEBUG: pantalla after factorial button -> " + pantalla.getText());
+    } else {
+        pantalla.setText(txt + "^-1");
+        System.out.println("DEBUG: pantalla after inverse button -> " + pantalla.getText());
     }
     }//GEN-LAST:event_btnInversoActionPerformed
 
     private void btnCuboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCuboActionPerformed
-        btnCuboActionPerformed(evt);
+        if (!encendida || !pantalla.isEditable()) return;
+        if (shiftActivo) {
+            // Cuando Shift: anteponer "3√" al último número o expresión entre paréntesis
+            String txt = pantalla.getText();
+            if (txt.matches(".*(\\([^)]*\\))$")) {
+                // termina en paréntesis: anteponer 3√ justo antes del último paréntesis
+                pantalla.setText(txt.replaceFirst("(\\([^)]*\\))$", "3√$1"));
+            } else if (txt.matches(".*([0-9]+(\\.[0-9]+)?)$")) {
+                // termina en número: anteponer 3√ al número final
+                pantalla.setText(txt.replaceFirst("([0-9]+(\\.[0-9]+)?)$", "3√$1"));
+            } else {
+                // no hay número ni paréntesis final, simplemente insertar el símbolo
+                agregarPantalla("3√");
+            }
+        } else {
+            // Sin Shift: añadir ^3 para que la expresión quede, por ejemplo, 7^3 y se calcule con '='
+            agregarPantalla("^3");
+        }
     }//GEN-LAST:event_btnCuboActionPerformed
 
     private void btnRaizActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRaizActionPerformed
-        btnRaizActionPerformed(evt);
+        if (!encendida || !pantalla.isEditable()) return;
+        if (shiftActivo) {
+            // raíz cúbica
+            agregarPantalla("cbrt(");
+        } else {
+            agregarPantalla("sqrt(");
+        }
     }//GEN-LAST:event_btnRaizActionPerformed
 
     private void btnOnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnOnActionPerformed
@@ -746,29 +1012,56 @@ public class Interfaz extends javax.swing.JFrame {
     }//GEN-LAST:event_btnCuadradoActionPerformed
 
     private void btnPotenciaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPotenciaActionPerformed
-        btnPotenciaActionPerformed(evt);
+    // En modo normal, agregar operador potencia '^'.
+    // Cuando Shift está activo, insertar símbolo de raíz '√' en la pantalla
+    // y delegar el cálculo al presionar '=' (evaluador ya transforma '√' a potencia 1/2).
+    if (!encendida || !pantalla.isEditable()) return;
+    if (shiftActivo) {
+        // Insertar el símbolo de raíz. El usuario puede escribir el número a continuación
+        // o usar paréntesis: ejemplo '√9' o '√(9+7)'.
+        agregarPantalla("√");
+    } else {
+        agregarPantalla("^");
+    }
     }//GEN-LAST:event_btnPotenciaActionPerformed
 
     private void btnLogActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLogActionPerformed
-    agregarPantalla("log(");
-    btnLogActionPerformed(evt);
+    if (encendida && pantalla.isEditable()) agregarPantalla("log(");
     }//GEN-LAST:event_btnLogActionPerformed
 
     private void btnLnActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLnActionPerformed
-    agregarPantalla("ln(");
+    if (encendida && pantalla.isEditable()) agregarPantalla("ln(");
     
     }//GEN-LAST:event_btnLnActionPerformed
 
     private void btnSinActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSinActionPerformed
-    agregarPantalla("sin(");
+    if (!encendida || !pantalla.isEditable()) return;
+    if (shiftActivo) {
+        agregarPantalla("asin(");
+    } else {
+        // En modo normal insertar sin(π) para que '=' lo evalúe
+        agregarPantalla("sin(π)");
+    }
     }//GEN-LAST:event_btnSinActionPerformed
 
     private void btnCosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCosActionPerformed
-    agregarPantalla("cos(");
+    if (!encendida || !pantalla.isEditable()) return;
+    if (shiftActivo) {
+        agregarPantalla("acos(");
+    } else {
+        // En modo normal insertar cos(π)
+        agregarPantalla("cos(π)");
+    }
     }//GEN-LAST:event_btnCosActionPerformed
 
     private void btnTanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTanActionPerformed
-    agregarPantalla("tan(");
+    if (!encendida || !pantalla.isEditable()) return;
+    if (shiftActivo) {
+        agregarPantalla("atan(");
+    } else {
+        // En modo normal insertar tan(π)
+        agregarPantalla("tan(π)");
+    }
     }//GEN-LAST:event_btnTanActionPerformed
 
     private void btnParentesisIzqActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnParentesisIzqActionPerformed
@@ -824,7 +1117,14 @@ public class Interfaz extends javax.swing.JFrame {
     }//GEN-LAST:event_btn3ActionPerformed
 
     private void btnExpActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnExpActionPerformed
-    if (encendida && pantalla.isEditable()) agregarPantalla("E");
+    if (!encendida || !pantalla.isEditable()) return;
+    if (shiftActivo) {
+        // Shift + EXP => insertar símbolo de pi (visualizado en el botón)
+        agregarPantalla("π");
+    } else {
+        // EXP normal => notación científica (E)
+        agregarPantalla("E");
+    }
     }//GEN-LAST:event_btnExpActionPerformed
 
     private void btnDelActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnDelActionPerformed
