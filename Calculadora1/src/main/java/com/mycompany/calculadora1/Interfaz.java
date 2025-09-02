@@ -1044,9 +1044,9 @@ public class Interfaz extends javax.swing.JFrame {
     if (shiftActivo) {
         agregarPantalla("asin(");
     } else {
-        // En modo normal insertar sin(π) para que '=' lo evalúe
-        agregarPantalla("sin(π)");
+        agregarPantalla("sin(");
     }
+    // Ahora el usuario puede ingresar cualquier número como argumento
     }//GEN-LAST:event_btnSinActionPerformed
 
     private void btnCosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCosActionPerformed
@@ -1054,9 +1054,9 @@ public class Interfaz extends javax.swing.JFrame {
     if (shiftActivo) {
         agregarPantalla("acos(");
     } else {
-        // En modo normal insertar cos(π)
-        agregarPantalla("cos(π)");
+        agregarPantalla("cos(");
     }
+    // Ahora el usuario puede ingresar cualquier número como argumento
     }//GEN-LAST:event_btnCosActionPerformed
 
     private void btnTanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnTanActionPerformed
@@ -1064,9 +1064,9 @@ public class Interfaz extends javax.swing.JFrame {
     if (shiftActivo) {
         agregarPantalla("atan(");
     } else {
-        // En modo normal insertar tan(π)
-        agregarPantalla("tan(π)");
+        agregarPantalla("tan(");
     }
+    // Ahora el usuario puede ingresar cualquier número como argumento
     }//GEN-LAST:event_btnTanActionPerformed
 
     private void btnParentesisIzqActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnParentesisIzqActionPerformed
