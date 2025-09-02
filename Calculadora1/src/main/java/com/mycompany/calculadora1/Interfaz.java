@@ -192,38 +192,48 @@ public class Interfaz extends javax.swing.JFrame {
         // Método para mostrar el resultado
         private void mostrarResultado() {
         try {
-            System.out.println("DEBUG: mostrarResultado - entrada pantalla='" + pantalla.getText() + "'");
             String entrada = pantalla.getText();
             if (entrada == null) entrada = "";
-            // Validaciones: si hay una llamada a función que requiere un argumento pero no lo tiene,
-            // informar "no es un numero".
-            String[] funcs = new String[]{"sin","cos","tan","asin","acos","atan","log","ln","sqrt","cbrt","exp"};
-            for (String f: funcs) {
+            String[] funcs = {"sin","cos","tan","asin","acos","atan","log","ln","sqrt","cbrt","exp"};
+            for (String f : funcs) {
                 if (entrada.contains(f + "(")) {
                     String arg = extraerPrimerArgumento(entrada, f);
                     if (arg == null || arg.trim().isEmpty()) {
-                        pantalla.setText("no es un numero");
+                        pantalla.setText("No es un número");
                         return;
                     }
                 }
             }
-            // Validar símbolo de raíz '√' seguido por un operando válido
             int idxRaiz = entrada.indexOf('√');
             if (idxRaiz >= 0) {
                 if (idxRaiz == entrada.length() - 1) {
-                    pantalla.setText("no es un numero");
+                    pantalla.setText("No es un número");
                     return;
                 } else {
                     char nc = entrada.charAt(idxRaiz + 1);
                     if (!(Character.isDigit(nc) || nc == '(' || nc == 'π' || nc == '.' || nc == '-')) {
-                        pantalla.setText("no es un numero");
+                        pantalla.setText("No es un número");
                         return;
                     }
                 }
             }
 
-            double res = evaluar(entrada);
-            // Si la expresión es una función trig inversa, intentar mostrar resultado como múltiplo de π
+            double res;
+            try {
+                res = evaluar(entrada);
+            } catch (IllegalArgumentException e) {
+                String msg = e.getMessage();
+                if (msg.contains("fuera de dominio") || msg.contains("indefinida") || msg.contains("no definido")) {
+                    pantalla.setText("No existe número");
+                } else if (msg.contains("falta argumento") || msg.contains("no es un numero")) {
+                    pantalla.setText("No es un número");
+                } else {
+                    pantalla.setText("Error");
+                }
+                return;
+            }
+
+            // Trigonométricas inversas: mostrar en notación π si posible, si no 'No existe número'
             if (entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
                 String func = null;
                 if (entrada.contains("asin(")) func = "asin";
@@ -232,24 +242,21 @@ public class Interfaz extends javax.swing.JFrame {
                 String arg = extraerPrimerArgumento(entrada, func);
                 String asPi = representarMultiploDePi(res);
                 if (arg != null && arg.contains("π")) {
-                    // Si el argumento contiene π, requerimos una representación en múltiplos racionales de π
                     if (asPi != null) {
                         pantalla.setText(asPi);
                         return;
                     } else {
-                        pantalla.setText("no existe numero");
+                        pantalla.setText("No existe número");
                         return;
                     }
                 } else {
-                    // Si no hay π en el argumento, mostramos la representación si existe, o caemos al resultado numérico
                     if (asPi != null) {
                         pantalla.setText(asPi);
                         return;
                     }
                 }
             }
-            // Para funciones trigonométricas directas: si el argumento contiene 'π',
-            // requerimos un valor directo (p/q·π) — si no existe, mostrar "no existe numero".
+            // Trigonométricas directas: si argumento contiene π, mostrar resultado exacto o 'No existe número'
             if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(")) {
                 String func = null;
                 if (entrada.contains("sin(")) func = "sin";
@@ -258,23 +265,21 @@ public class Interfaz extends javax.swing.JFrame {
                 String arg = extraerPrimerArgumento(entrada, func);
                 if (arg != null && arg.contains("π")) {
                     String fmt = formatearTrigConPi(entrada);
-                    if (fmt == null) {
-                        pantalla.setText("no existe numero");
+                    if (fmt == null || fmt.equals("Undefined")) {
+                        pantalla.setText("No existe número");
                         return;
                     } else {
                         pantalla.setText(fmt);
                         return;
                     }
                 }
-                // Si el argumento no contiene π, dejamos que la evaluación numérica normal ocurra
             }
-            if (res == (long)res) pantalla.setText(String.valueOf((long)res));
+            if (res == (long) res) pantalla.setText(String.valueOf((long) res));
             else pantalla.setText(String.valueOf(res));
         } catch (Exception e) {
-            System.out.println("DEBUG: mostrarResultado - excepción: " + e.getMessage());
             pantalla.setText("Error");
         }
-        }
+    }
 
     // Intenta representar un ángulo (radianes) como múltiplo racional de PI.
     // Devuelve cadenas como "π", "π/2", "-π/6", "0" o null si no se puede aproximar.
