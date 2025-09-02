@@ -222,6 +222,13 @@ public class Interfaz extends javax.swing.JFrame {
             double res;
             try {
                 res = evaluar(entrada);
+                // Validar resultado para funciones trigonométricas
+                if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(") || entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
+                    if (Double.isNaN(res) || Double.isInfinite(res)) {
+                        pantalla.setText("No es un número");
+                        return;
+                    }
+                }
             } catch (IllegalArgumentException e) {
                 String msg = e.getMessage();
                 if (msg.contains("fuera de dominio") || msg.contains("indefinida") || msg.contains("no definido")) {
