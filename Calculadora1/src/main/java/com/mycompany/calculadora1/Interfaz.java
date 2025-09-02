@@ -1,4 +1,3 @@
-
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
@@ -944,135 +943,41 @@ public class Interfaz extends javax.swing.JFrame {
     if (!encendida || !pantalla.isEditable()) {
         javax.swing.JOptionPane.showMessageDialog(this, "Enciende la calculadora antes de operar (botón ON)", "Info", javax.swing.JOptionPane.INFORMATION_MESSAGE);
         return;
-        try {
-            String entrada = pantalla.getText();
-            if (entrada == null || entrada.isEmpty()) return;
+    }
+    String txt = pantalla.getText();
+    if (txt == null) txt = "";
+    if (txt.isEmpty()) {
+        // nothing to invert or factorial
+        return;
+    }
+    // Añadir el sufijo aunque la pantalla tenga una expresión (ej: (2+3) o 7)
+    if (shiftActivo) {
+        pantalla.setText(txt + "!");
+        System.out.println("DEBUG: pantalla after factorial button -> " + pantalla.getText());
+    } else {
+        pantalla.setText(txt + "^-1");
+        System.out.println("DEBUG: pantalla after inverse button -> " + pantalla.getText());
+    }
+    }//GEN-LAST:event_btnInversoActionPerformed
 
-            String[] funcs = {"sin", "cos", "tan", "asin", "acos", "atan", "log", "ln", "sqrt", "cbrt", "exp"};
-            for (String f : funcs) {
-                if (entrada.contains(f + "(")) {
-                    String arg = extraerPrimerArgumento(entrada, f);
-                    if (arg == null || arg.trim().isEmpty()) {
-                        pantalla.setText("No es un número");
-                        return;
-                    }
-                }
-            }
-
-            double res = evaluar(entrada);
-
-            // Trigonométricas inversas: mostrar en notación π si posible, si no 'No existe número'
-            if (entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
-                String func = null;
-                if (entrada.contains("asin(")) func = "asin";
-                else if (entrada.contains("acos(")) func = "acos";
-                else if (entrada.contains("atan(")) func = "atan";
-                String arg = extraerPrimerArgumento(entrada, func);
-                String asPi = representarMultiploDePi(res);
-                if (arg != null && arg.contains("π")) {
-                    if (asPi != null) {
-                        pantalla.setText(asPi);
-                        return;
-                    } else {
-                        pantalla.setText("No existe número");
-                        return;
-                    }
-                } else {
-                    if (asPi != null) {
-                        pantalla.setText(asPi);
-                        return;
-                    }
-                }
-            }
-            // Trigonométricas directas: si argumento contiene π, mostrar resultado exacto o 'No existe número'
-            if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(")) {
-                String func = null;
-                if (entrada.contains("sin(")) func = "sin";
-                else if (entrada.contains("cos(")) func = "cos";
-                else if (entrada.contains("tan(")) func = "tan";
-                String arg = extraerPrimerArgumento(entrada, func);
-                if (arg != null && arg.contains("π")) {
-                    String fmt = formatearTrigConPi(entrada);
-                    if (fmt == null) {
-                        pantalla.setText("No existe número");
-                        return;
-                    } else {
-                        pantalla.setText(fmt);
-                        return;
-                    }
-                }
-            }
-
-            if (res == (long) res) {
-                pantalla.setText(String.valueOf((long) res));
+    private void btnCuboActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnCuboActionPerformed
+        if (!encendida || !pantalla.isEditable()) return;
+        if (shiftActivo) {
+            // Cuando Shift: anteponer "3√" al último número o expresión entre paréntesis
+            String txt = pantalla.getText();
+            if (txt.matches(".*(\\([^)]*\\))$")) {
+                // termina en paréntesis: anteponer 3√ justo antes del último paréntesis
+                pantalla.setText(txt.replaceFirst("(\\([^)]*\\))$", "3√$1"));
+            } else if (txt.matches(".*([0-9]+(\\.[0-9]+)?)$")) {
+                // termina en número: anteponer 3√ al número final
+                pantalla.setText(txt.replaceFirst("([0-9]+(\\.[0-9]+)?)$", "3√$1"));
             } else {
-                pantalla.setText(String.valueOf(res));
+                // no hay número ni paréntesis final, simplemente insertar el símbolo
+                agregarPantalla("3√");
             }
-
-        } catch (IllegalArgumentException e) {
-            String msg = e.getMessage();
-            if (msg.contains("fuera de dominio") || msg.contains("indefinida") || msg.contains("no definido")) {
-                pantalla.setText("No existe número");
-            } else if (msg.contains("falta argumento") || msg.contains("no es un numero")) {
-                pantalla.setText("No es un número");
-            } else {
-                pantalla.setText("Error");
-            }
-        } catch (Exception e) {
-            pantalla.setText("Error");
-        }
-
-    }
-
-    // Helpers para notación π y trigonometría
-    private String representarMultiploDePi(double ang) {
-        double pi = Math.PI;
-        for (int q = 1; q <= 24; q++) {
-            double pD = Math.round(ang / pi * q);
-            double approx = (pD / q) * pi;
-            if (Math.abs(ang - approx) < 1e-10) {
-                if (pD == 0) return "0";
-                StringBuilder sb = new StringBuilder();
-                if (pD < 0) sb.append("-");
-                int p = (int) Math.abs(pD);
-                if (p == q) sb.append("π");
-                else if (p == 1) sb.append("π/" + q);
-                else sb.append(p + "π/" + q);
-                return sb.toString();
-            }
-        }
-        return null;
-    }
-
-    private String formatearTrigConPi(String entrada) {
-        try {
-            if (entrada.contains("sin(")) {
-                String arg = extraerPrimerArgumento(entrada, "sin");
-                double val = evaluar(arg);
-                double r = Math.sin(val);
-                if (Math.abs(r) < 1e-12) return "0";
-                if (Math.abs(Math.abs(r) - 1.0) < 1e-12) return String.valueOf((int) Math.signum(r));
-            }
-            if (entrada.contains("cos(")) {
-                String arg = extraerPrimerArgumento(entrada, "cos");
-                double val = evaluar(arg);
-                double r = Math.cos(val);
-                if (Math.abs(r) < 1e-12) return "0";
-                if (Math.abs(Math.abs(r) - 1.0) < 1e-12) return String.valueOf((int) Math.signum(r));
-            }
-            if (entrada.contains("tan(")) {
-                String arg = extraerPrimerArgumento(entrada, "tan");
-                double val = evaluar(arg);
-                double r = Math.tan(val);
-                if (Math.abs(r) < 1e-12) return "0";
-                if (Double.isInfinite(r)) return "Indefinido";
-                return String.valueOf(r);
-            }
-        } catch (Exception e) {
-            return null;
-        }
-        return null;
-    }
+        } else {
+            // Sin Shift: añadir ^3 para que la expresión quede, por ejemplo, 7^3 y se calcule con '='
+            agregarPantalla("^3");
         }
     }//GEN-LAST:event_btnCuboActionPerformed
 
