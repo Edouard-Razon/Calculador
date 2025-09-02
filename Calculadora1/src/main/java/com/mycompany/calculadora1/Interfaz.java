@@ -14,6 +14,60 @@ import java.util.Stack;
  * @author Edu Nuñez
  */
 public class Interfaz extends javax.swing.JFrame {
+    // --- Helpers trigonométricos y notación π ---
+    // Intenta representar un ángulo (radianes) como múltiplo racional de PI.
+    // Devuelve cadenas como "π", "π/2", "-π/6", "0" o null si no se puede aproximar.
+    private String representarMultiploDePi(double ang) {
+        double pi = Math.PI;
+        double ratio = ang / pi;
+        double tol = 1e-10;
+        for (int q = 1; q <= 24; q++) {
+            double pD = Math.round(ratio * q);
+            int p = (int) pD;
+            double approx = ((double)p / q) * pi;
+            if (Math.abs(ang - approx) < tol) {
+                if (p == 0) return "0";
+                StringBuilder sb = new StringBuilder();
+                if (p < 0) sb.append("-");
+                int absP = Math.abs(p);
+                if (absP == q) sb.append("π");
+                else if (absP == 1) sb.append("π/" + q);
+                else sb.append(absP + "π/" + q);
+                return sb.toString();
+            }
+        }
+        double eps = 1e-10;
+        double k = Math.round(ang / (2*pi));
+        if (Math.abs(ang - k*(2*pi)) < eps) {
+            long kk = (long) k;
+            return kk + "·2π";
+        }
+        return null;
+    }
+
+    // Extrae el primer argumento entre paréntesis de la primera aparición de funcName en la entrada.
+    private String extraerPrimerArgumento(String entrada, String funcName) {
+        int idx = entrada.indexOf(funcName + "(");
+        if (idx < 0) return null;
+        int start = entrada.indexOf('(', idx);
+        if (start < 0) return null;
+        int depth = 1;
+        StringBuilder sb = new StringBuilder();
+        for (int i = start + 1; i < entrada.length(); i++) {
+            char c = entrada.charAt(i);
+            if (c == '(') depth++;
+            else if (c == ')') {
+                depth--;
+                if (depth == 0) return sb.toString();
+            }
+            if (depth > 0) sb.append(c);
+        }
+        return null;
+    }
+
+    // Intenta formatear el resultado de sin/cos/tan usando π cuando el argumento es múltiplo racional de π.
+    // Devuelve null si no se aplica un formateo especial y se debe usar el resultado numérico normal.
+    // ...duplicado eliminado, se mantiene la definición más abajo...
 
     /**
      * Creates new form Interfaz
@@ -291,57 +345,10 @@ public class Interfaz extends javax.swing.JFrame {
 
     // Intenta representar un ángulo (radianes) como múltiplo racional de PI.
     // Devuelve cadenas como "π", "π/2", "-π/6", "0" o null si no se puede aproximar.
-    private String representarMultiploDePi(double ang) {
-        double pi = Math.PI;
-        double ratio = ang / pi;
-        double tol = 1e-10;
-        // Normalizar: reducir al rango [-1,1] considerando múltiplos enteros
-        // pero nos interesa representar cualquier múltiplo p/q, incluso >1.
-        for (int q = 1; q <= 24; q++) {
-            double pD = Math.round(ratio * q);
-            int p = (int) pD;
-            double approx = ((double)p / q) * pi;
-            if (Math.abs(ang - approx) < tol) {
-                // simplificar signo
-                if (p == 0) return "0";
-                StringBuilder sb = new StringBuilder();
-                if (p < 0) sb.append("-");
-                int absP = Math.abs(p);
-                if (absP == q) sb.append("π");
-                else if (absP == 1) sb.append("π/" + q);
-                else sb.append(absP + "π/" + q);
-                return sb.toString();
-            }
-        }
-        // también tolerar ángulos cercanos a 2π multiples y representar como multiples enteros cuando corresponda
-        double eps = 1e-10;
-        double k = Math.round(ang / (2*pi));
-        if (Math.abs(ang - k*(2*pi)) < eps) {
-            long kk = (long) k;
-            return kk + "·2π";
-        }
-        return null;
-    }
+    // ...duplicado eliminado, se mantiene la definición al inicio...
 
     // Extrae el primer argumento entre paréntesis de la primera aparición de funcName en la entrada.
-    private String extraerPrimerArgumento(String entrada, String funcName) {
-        int idx = entrada.indexOf(funcName + "(");
-        if (idx < 0) return null;
-        int start = entrada.indexOf('(', idx);
-        if (start < 0) return null;
-        int depth = 1;
-        StringBuilder sb = new StringBuilder();
-        for (int i = start + 1; i < entrada.length(); i++) {
-            char c = entrada.charAt(i);
-            if (c == '(') depth++;
-            else if (c == ')') {
-                depth--;
-                if (depth == 0) return sb.toString();
-            }
-            if (depth > 0) sb.append(c);
-        }
-        return null;
-    }
+    // ...duplicado eliminado, se mantiene la definición al inicio...
 
     // Intenta formatear el resultado de sin/cos/tan usando π cuando el argumento es múltiplo racional de π.
     // Devuelve null si no se aplica un formateo especial y se debe usar el resultado numérico normal.
