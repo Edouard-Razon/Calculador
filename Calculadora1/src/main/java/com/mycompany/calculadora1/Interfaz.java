@@ -200,21 +200,21 @@ public class Interfaz extends javax.swing.JFrame {
             if (stack.isEmpty()) throw new IllegalArgumentException("Función sin argumento");
             double a = stack.pop();
             switch (t) {
-                case "sin": stack.push(Math.sin(a)); break;
-                case "cos": stack.push(Math.cos(a)); break;
+                case "sin": stack.push(Math.sin(Math.toRadians(a))); break; // Convertir grados a radianes
+                case "cos": stack.push(Math.cos(Math.toRadians(a))); break; // Convertir grados a radianes
                 case "tan": 
-                    if (Math.abs(Math.cos(a)) < 1e-12) throw new ArithmeticException("Tangente indefinida");
-                    stack.push(Math.tan(a)); 
+                    if (Math.abs(Math.cos(Math.toRadians(a))) < 1e-12) throw new ArithmeticException("Tangente indefinida");
+                    stack.push(Math.tan(Math.toRadians(a))); 
                     break;
                 case "asin": 
                     if (a < -1 || a > 1) throw new ArithmeticException("Arcoseno fuera de dominio");
-                    stack.push(Math.asin(a)); 
+                    stack.push(Math.toDegrees(Math.asin(a))); // Convertir radianes a grados
                     break;
                 case "acos": 
                     if (a < -1 || a > 1) throw new ArithmeticException("Arcocoseno fuera de dominio");
-                    stack.push(Math.acos(a)); 
+                    stack.push(Math.toDegrees(Math.acos(a))); // Convertir radianes a grados
                     break;
-                case "atan": stack.push(Math.atan(a)); break;
+                case "atan": stack.push(Math.toDegrees(Math.atan(a))); break; // Convertir radianes a grados
                 case "sqrt": 
                     if (a < 0) throw new ArithmeticException("Raíz cuadrada de número negativo");
                     stack.push(Math.sqrt(a)); 
