@@ -111,31 +111,23 @@ public class Interfaz extends javax.swing.JFrame {
     expr = expr.replace("atan", "atan");
     expr = expr.replace("x!", "!");
     expr = expr.replace("∛", "cbrt");
-    // Si el usuario escribió una notación "3√" puede haber sido transformada a "3sqrt" arriba;
-    // soportamos ambos formatos convirtiéndolos a cbrt(...)
-    expr = expr.replaceAll("3sqrt\\(([^)]+)\\)", "cbrt($1)");
-    expr = expr.replaceAll("3sqrt([0-9]+\\.?[0-9]*)", "cbrt($1)");
-    // Transformaciones genéricas para raíz n y raíz cuadrada:
-    // Primero: caso n√(expr) -> (expr)^(1/n)
-    expr = expr.replaceAll("([0-9]+)√\\(([^)]+)\\)", "($2)^(1/$1)");
-    // n√number -> (number)^(1/n)
-    expr = expr.replaceAll("([0-9]+)√([0-9]+\\.?[0-9]*)", "($2)^(1/$1)");
-    // Ahora casos sin índice: √(expr) -> (expr)^(1/2)
+
+    // Transformaciones para soportar la notación "nraizX"
+    // Ejemplo: 3raiz7 -> (7)^(1/3)
+    expr = expr.replaceAll("([0-9]+)raiz\\(([^)]+)\\)", "($2)^(1/$1)");
+    expr = expr.replaceAll("([0-9]+)raiz([0-9]+\\.?[0-9]*)", "($2)^(1/$1)");
+
+    // Transformaciones genéricas para raíz cuadrada
     expr = expr.replaceAll("√\\(([^)]+)\\)", "($1)^(1/2)");
-    // √number -> (number)^(1/2)
     expr = expr.replaceAll("√([0-9]+\\.?[0-9]*)", "($1)^(1/2)");
-    // Soporte para inverso: X^-1 => (1/(X)) – soporta números, decimales o expresiones entre paréntesis
-    // Primera: expresiones entre paréntesis, por ejemplo (2+3)^-1
+
+    // Soporte para inverso: X^-1 => (1/(X))
     expr = expr.replaceAll("(\\([^()]+\\))\\^-1", "(1/($1))");
-    // Segunda: números con decimales o enteros, por ejemplo 7^-1 o 3.5^-1
     expr = expr.replaceAll("(\\d+(?:\\.\\d+)?)\\^-1", "(1/($1))");
-    // Soporte para notación exponencial tipo 1.23E-4: colapsar posibles espacios entre E y signo/dígitos
+
+    // Soporte para notación exponencial tipo 1.23E-4
     expr = expr.replaceAll("(\\d+(?:\\.\\d+)?)[eE]\\s*([+-]?\\d+)", "$1E$2");
-            // Reemplazo para notación de raíz cúbica literal "3√expr" o "3√(expr)" -> cbrt(expr)
-            // Caso con paréntesis: 3√(expr)
-            expr = expr.replaceAll("3√\\(([^)]+)\\)", "cbrt($1)");
-            // Caso con número o expresión simple sin paréntesis: 3√8 -> cbrt(8)
-            expr = expr.replaceAll("3√([0-9]+\\.?[0-9]*)", "cbrt($1)");
+
     System.out.println("DEBUG: evaluar - normalizada='" + expr + "'");
     // Tokenización y manejo de operadores
     String[] tokens = tokenize(expr);
@@ -977,7 +969,7 @@ private void mostrarResultado() {
         );
 
         pack();
-    }// </editor-fold>//GEN-END:initComponents
+    }// </editor-fold>//GEN-BEGIN:initComponents
 
     private void btnShiftActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnShiftActionPerformed
     shiftActivo = !shiftActivo;
