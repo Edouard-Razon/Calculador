@@ -190,7 +190,10 @@ public class Interfaz extends javax.swing.JFrame {
                 case "+": stack.push(a + b); break;
                 case "-": stack.push(a - b); break;
                 case "*": stack.push(a * b); break;
-                case "/": stack.push(a / b); break;
+                case "/": 
+                    if (b == 0) throw new ArithmeticException("División por cero");
+                    stack.push(a / b); 
+                    break;
                 case "^": stack.push(Math.pow(a, b)); break;
             }
         } else if (isFunc(t)) {
@@ -199,14 +202,32 @@ public class Interfaz extends javax.swing.JFrame {
             switch (t) {
                 case "sin": stack.push(Math.sin(a)); break;
                 case "cos": stack.push(Math.cos(a)); break;
-                case "tan": stack.push(Math.tan(a)); break;
-                case "asin": stack.push(Math.asin(a)); break;
-                case "acos": stack.push(Math.acos(a)); break;
+                case "tan": 
+                    if (Math.abs(Math.cos(a)) < 1e-12) throw new ArithmeticException("Tangente indefinida");
+                    stack.push(Math.tan(a)); 
+                    break;
+                case "asin": 
+                    if (a < -1 || a > 1) throw new ArithmeticException("Arcoseno fuera de dominio");
+                    stack.push(Math.asin(a)); 
+                    break;
+                case "acos": 
+                    if (a < -1 || a > 1) throw new ArithmeticException("Arcocoseno fuera de dominio");
+                    stack.push(Math.acos(a)); 
+                    break;
                 case "atan": stack.push(Math.atan(a)); break;
-                case "sqrt": stack.push(Math.sqrt(a)); break;
+                case "sqrt": 
+                    if (a < 0) throw new ArithmeticException("Raíz cuadrada de número negativo");
+                    stack.push(Math.sqrt(a)); 
+                    break;
                 case "cbrt": stack.push(Math.cbrt(a)); break;
-                case "log": stack.push(Math.log10(a)); break;
-                case "ln": stack.push(Math.log(a)); break;
+                case "log": 
+                    if (a <= 0) throw new ArithmeticException("Logaritmo base 10 de número no positivo");
+                    stack.push(Math.log10(a)); 
+                    break;
+                case "ln": 
+                    if (a <= 0) throw new ArithmeticException("Logaritmo natural de número no positivo");
+                    stack.push(Math.log(a)); 
+                    break;
                 case "exp": stack.push(Math.exp(a)); break;
             }
         } else if (t.equals("!")) {
