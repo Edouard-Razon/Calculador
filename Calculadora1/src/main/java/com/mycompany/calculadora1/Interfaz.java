@@ -240,104 +240,126 @@ public class Interfaz extends javax.swing.JFrame {
     }
 
         // Método para mostrar el resultado
-        private void mostrarResultado() {
-        try {
-            String entrada = pantalla.getText();
-            if (entrada == null) entrada = "";
-            String[] funcs = {"sin","cos","tan","asin","acos","atan","log","ln","sqrt","cbrt","exp"};
-            for (String f : funcs) {
-                if (entrada.contains(f + "(")) {
-                    String arg = extraerPrimerArgumento(entrada, f);
-                    if (arg == null || arg.trim().isEmpty()) {
-                        pantalla.setText("No es un número");
-                        return;
-                    }
-                }
-            }
-            int idxRaiz = entrada.indexOf('√');
-            if (idxRaiz >= 0) {
-                if (idxRaiz == entrada.length() - 1) {
-                    pantalla.setText("No es un número");
-                    return;
-                } else {
-                    char nc = entrada.charAt(idxRaiz + 1);
-                    if (!(Character.isDigit(nc) || nc == '(' || nc == 'π' || nc == '.' || nc == '-')) {
-                        pantalla.setText("No es un número");
-                        return;
-                    }
-                }
-            }
+        // ...código existente...
 
-            double res;
-            try {
-                res = evaluar(entrada);
-                // Validar resultado para funciones trigonométricas
-                if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(") || entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
-                    if (Double.isNaN(res) || Double.isInfinite(res)) {
-                        pantalla.setText("No es un número");
-                        return;
-                    }
-                }
-            } catch (IllegalArgumentException e) {
-                String msg = e.getMessage();
-                if (msg.contains("fuera de dominio") || msg.contains("indefinida") || msg.contains("no definido")) {
-                    pantalla.setText("No existe número");
-                } else if (msg.contains("falta argumento") || msg.contains("no es un numero")) {
-                    pantalla.setText("No es un número");
-                } else {
-                    pantalla.setText("Error");
-                }
+// Método para mostrar el resultado
+private void mostrarResultado() {
+    try {
+        String entrada = pantalla.getText();
+        if (entrada == null) entrada = "";
+
+        // --- Validación de paréntesis ---
+        int abiertos = 0, cerrados = 0;
+        for (int i = 0; i < entrada.length(); i++) {
+            char c = entrada.charAt(i);
+            if (c == '(') abiertos++;
+            else if (c == ')') cerrados++;
+            // Si en algún momento hay más cerrados que abiertos, error inmediato
+            if (cerrados > abiertos) {
+                pantalla.setText("Error de paréntesis");
                 return;
             }
-
-            // Trigonométricas inversas: mostrar en notación π si posible, si no 'No existe número'
-            if (entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
-                String func = null;
-                if (entrada.contains("asin(")) func = "asin";
-                else if (entrada.contains("acos(")) func = "acos";
-                else if (entrada.contains("atan(")) func = "atan";
-                String arg = extraerPrimerArgumento(entrada, func);
-                String asPi = representarMultiploDePi(res);
-                if (arg != null && arg.contains("π")) {
-                    if (asPi != null) {
-                        pantalla.setText(asPi);
-                        return;
-                    } else {
-                        pantalla.setText("No existe número");
-                        return;
-                    }
-                } else {
-                    if (asPi != null) {
-                        pantalla.setText(asPi);
-                        return;
-                    }
-                }
-            }
-            // Trigonométricas directas: si argumento contiene π, mostrar resultado exacto o 'No existe número'
-            if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(")) {
-                String func = null;
-                if (entrada.contains("sin(")) func = "sin";
-                else if (entrada.contains("cos(")) func = "cos";
-                else if (entrada.contains("tan(")) func = "tan";
-                String arg = extraerPrimerArgumento(entrada, func);
-                if (arg != null && arg.contains("π")) {
-                    String fmt = formatearTrigConPi(entrada);
-                    if (fmt == null || fmt.equals("Undefined")) {
-                        pantalla.setText("No existe número");
-                        return;
-                    } else {
-                        pantalla.setText(fmt);
-                        return;
-                    }
-                }
-            }
-            if (res == (long) res) pantalla.setText(String.valueOf((long) res));
-            else pantalla.setText(String.valueOf(res));
-        } catch (Exception e) {
-            pantalla.setText("Error");
         }
+        if (abiertos != cerrados) {
+            pantalla.setText("Error de paréntesis");
+            return;
+        }
+
+        String[] funcs = {"sin","cos","tan","asin","acos","atan","log","ln","sqrt","cbrt","exp"};
+        for (String f : funcs) {
+            if (entrada.contains(f + "(")) {
+                String arg = extraerPrimerArgumento(entrada, f);
+                if (arg == null || arg.trim().isEmpty()) {
+                    pantalla.setText("No es un número");
+                    return;
+                }
+            }
+        }
+        int idxRaiz = entrada.indexOf('√');
+        if (idxRaiz >= 0) {
+            if (idxRaiz == entrada.length() - 1) {
+                pantalla.setText("No es un número");
+                return;
+            } else {
+                char nc = entrada.charAt(idxRaiz + 1);
+                if (!(Character.isDigit(nc) || nc == '(' || nc == 'π' || nc == '.' || nc == '-')) {
+                    pantalla.setText("No es un número");
+                    return;
+                }
+            }
+        }
+
+        double res;
+        try {
+            res = evaluar(entrada);
+            // Validar resultado para funciones trigonométricas
+            if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(") || entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
+                if (Double.isNaN(res) || Double.isInfinite(res)) {
+                    pantalla.setText("No es un número");
+                    return;
+                }
+            }
+        } catch (IllegalArgumentException e) {
+            String msg = e.getMessage();
+            if (msg.contains("fuera de dominio") || msg.contains("indefinida") || msg.contains("no definido")) {
+                pantalla.setText("No existe número");
+            } else if (msg.contains("falta argumento") || msg.contains("no es un numero")) {
+                pantalla.setText("No es un número");
+            } else {
+                pantalla.setText("Error");
+            }
+            return;
+        }
+
+        // Trigonométricas inversas: mostrar en notación π si posible, si no 'No existe número'
+        if (entrada.contains("asin(") || entrada.contains("acos(") || entrada.contains("atan(")) {
+            String func = null;
+            if (entrada.contains("asin(")) func = "asin";
+            else if (entrada.contains("acos(")) func = "acos";
+            else if (entrada.contains("atan(")) func = "atan";
+            String arg = extraerPrimerArgumento(entrada, func);
+            String asPi = representarMultiploDePi(res);
+            if (arg != null && arg.contains("π")) {
+                if (asPi != null) {
+                    pantalla.setText(asPi);
+                    return;
+                } else {
+                    pantalla.setText("No existe número");
+                    return;
+                }
+            } else {
+                if (asPi != null) {
+                    pantalla.setText(asPi);
+                    return;
+                }
+            }
+        }
+        // Trigonométricas directas: si argumento contiene π, mostrar resultado exacto o 'No existe número'
+        if (entrada.contains("sin(") || entrada.contains("cos(") || entrada.contains("tan(")) {
+            String func = null;
+            if (entrada.contains("sin(")) func = "sin";
+            else if (entrada.contains("cos(")) func = "cos";
+            else if (entrada.contains("tan(")) func = "tan";
+            String arg = extraerPrimerArgumento(entrada, func);
+            if (arg != null && arg.contains("π")) {
+                String fmt = formatearTrigConPi(entrada);
+                if (fmt == null || fmt.equals("Undefined")) {
+                    pantalla.setText("No existe número");
+                    return;
+                } else {
+                    pantalla.setText(fmt);
+                    return;
+                }
+            }
+        }
+        if (res == (long) res) pantalla.setText(String.valueOf((long) res));
+        else pantalla.setText(String.valueOf(res));
+    } catch (Exception e) {
+        pantalla.setText("Error");
     }
-    
+}
+
+    //Forma trigonometrica
     private String formatearTrigConPi(String entrada) {
         try {
             if (entrada.contains("sin(")) {
