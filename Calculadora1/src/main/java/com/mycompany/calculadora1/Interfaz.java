@@ -65,10 +65,6 @@ public class Interfaz extends javax.swing.JFrame {
         return null;
     }
 
-    // Intenta formatear el resultado de sin/cos/tan usando π cuando el argumento es múltiplo racional de π.
-    // Devuelve null si no se aplica un formateo especial y se debe usar el resultado numérico normal.
-    // ...duplicado eliminado, se mantiene la definición más abajo...
-
     /**
      * Creates new form Interfaz
      */
@@ -208,14 +204,13 @@ public class Interfaz extends javax.swing.JFrame {
     }
 
     private String[] tokenize(String expr) {
-    // No separar el signo + o - que forma parte de un exponente, por ejemplo 1E-3
+    // No separar el signo + o - que forma parte de un exponente
     expr = expr.replaceAll("([()+\\-*/^!,])", " $1 ");
         expr = expr.replaceAll("\\s+", " ");
-        // unir tokens del tipo '1E' '-' '3' en '1E-3' ya que el replaceAll anterior pudo separar
         expr = expr.replaceAll("(\\d+(?:\\.\\d+)?E)( )([+-]) (\\d+)", "$1$3$4");
         return expr.trim().split(" ");
     }
-    // Método factorial necesario para el evaluador
+    // Método factorial
     private long factorial(int n) {
         if (n < 0) throw new ArithmeticException("Negativo");
         long r=1; for (int i=2;i<=n;i++) r*=i;
@@ -342,16 +337,7 @@ public class Interfaz extends javax.swing.JFrame {
             pantalla.setText("Error");
         }
     }
-
-    // Intenta representar un ángulo (radianes) como múltiplo racional de PI.
-    // Devuelve cadenas como "π", "π/2", "-π/6", "0" o null si no se puede aproximar.
-    // ...duplicado eliminado, se mantiene la definición al inicio...
-
-    // Extrae el primer argumento entre paréntesis de la primera aparición de funcName en la entrada.
-    // ...duplicado eliminado, se mantiene la definición al inicio...
-
-    // Intenta formatear el resultado de sin/cos/tan usando π cuando el argumento es múltiplo racional de π.
-    // Devuelve null si no se aplica un formateo especial y se debe usar el resultado numérico normal.
+    
     private String formatearTrigConPi(String entrada) {
         try {
             if (entrada.contains("sin(")) {
@@ -969,7 +955,6 @@ public class Interfaz extends javax.swing.JFrame {
         // nothing to invert or factorial
         return;
     }
-    // Añadir el sufijo aunque la pantalla tenga una expresión (ej: (2+3) o 7)
     if (shiftActivo) {
         pantalla.setText(txt + "!");
         System.out.println("DEBUG: pantalla after factorial button -> " + pantalla.getText());
@@ -1032,7 +1017,7 @@ public class Interfaz extends javax.swing.JFrame {
     private void btnPotenciaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPotenciaActionPerformed
     // En modo normal, agregar operador potencia '^'.
     // Cuando Shift está activo, insertar símbolo de raíz '√' en la pantalla
-    // y delegar el cálculo al presionar '=' (evaluador ya transforma '√' a potencia 1/2).
+    // y delegar el cálculo al presionar '='
     if (!encendida || !pantalla.isEditable()) return;
     if (shiftActivo) {
         // Insertar el símbolo de raíz. El usuario puede escribir el número a continuación
