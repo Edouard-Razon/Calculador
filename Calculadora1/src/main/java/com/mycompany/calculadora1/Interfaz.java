@@ -112,7 +112,7 @@ public class Interfaz extends javax.swing.JFrame {
     expr = expr.replace("x!", "!");
     expr = expr.replace("∛", "cbrt");
 
-    // Transformaciones para soportar la notación "nraizX"
+    // Transformaciones para soportar "nraizX"
     // Ejemplo: 3raiz7 -> (7)^(1/3)
     expr = expr.replaceAll("([0-9]+)raiz\\(([^)]+)\\)", "($2)^(1/$1)");
     expr = expr.replaceAll("([0-9]+)raiz([0-9]+\\.?[0-9]*)", "($2)^(1/$1)");
@@ -490,6 +490,9 @@ private void mostrarResultado() {
         btnPunto = new javax.swing.JButton();
         btn9 = new javax.swing.JButton();
         btn6 = new javax.swing.JButton();
+        btn3 = new javax.swing.JButton();
+        btnExp = new javax.swing.JButton();
+        btnDel = new
         btn3 = new javax.swing.JButton();
         btnExp = new javax.swing.JButton();
         btnDel = new javax.swing.JButton();
