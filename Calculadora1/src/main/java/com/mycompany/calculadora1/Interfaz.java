@@ -1,4 +1,3 @@
-
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
@@ -105,8 +104,8 @@ public class Interfaz extends javax.swing.JFrame {
 
         // Método para evaluar la expresión matemática
         private double evaluar(String expr) {
-        System.out.println("DEBUG: evaluar - entrada='" + expr + "'");
-        expr = expr.replace("π", String.valueOf(Math.PI));
+    System.out.println("DEBUG: evaluar - entrada='" + expr + "'");
+    expr = expr.replace("π", String.valueOf(Math.PI));
     expr = expr.replace("asin", "asin");
     expr = expr.replace("acos", "acos");
     expr = expr.replace("atan", "atan");
@@ -138,70 +137,88 @@ public class Interfaz extends javax.swing.JFrame {
             // Caso con número o expresión simple sin paréntesis: 3√8 -> cbrt(8)
             expr = expr.replaceAll("3√([0-9]+\\.?[0-9]*)", "cbrt($1)");
     System.out.println("DEBUG: evaluar - normalizada='" + expr + "'");
+    // Tokenización y manejo de operadores
     String[] tokens = tokenize(expr);
     System.out.println("DEBUG: evaluar - tokens=" + java.util.Arrays.toString(tokens));
-        Queue<String> output = new LinkedList<>();
-        Stack<String> ops = new Stack<>();
-        for (String t: tokens) {
-            if (t.isEmpty()) continue;
-            if (isNumber(t)) output.add(t);
-            else if (isFunc(t)) ops.push(t);
-            else if (t.equals(",")) {
-                while (!ops.isEmpty() && !ops.peek().equals("(")) output.add(ops.pop());
-            } else if (isOperator(t)) {
-                while (!ops.isEmpty() && isOperator(ops.peek()) && precedence(t) <= precedence(ops.peek()))
-                    output.add(ops.pop());
-                ops.push(t);
-                } else if (t.equals("!")) {
-                    // Factorial is a postfix operator — push directly to output
-                    output.add(t);
-            } else if (t.equals("(")) ops.push(t);
-            else if (t.equals(")")) {
-                while (!ops.isEmpty() && !ops.peek().equals("(")) output.add(ops.pop());
-                if (!ops.isEmpty() && ops.peek().equals("(")) ops.pop();
-                if (!ops.isEmpty() && isFunc(ops.peek())) output.add(ops.pop());
+    Queue<String> output = new LinkedList<>();
+    Stack<String> ops = new Stack<>();
+
+    for (String t : tokens) {
+        if (t.isEmpty()) continue;
+        if (isNumber(t)) {
+            output.add(t); // Números directamente a la salida
+        } else if (isFunc(t)) {
+            ops.push(t); // Funciones a la pila de operadores
+        } else if (isOperator(t)) {
+            // Respetar precedencia de operadores
+            while (!ops.isEmpty() && isOperator(ops.peek()) && precedence(t) <= precedence(ops.peek())) {
+                output.add(ops.pop());
+            }
+            ops.push(t);
+        } else if (t.equals("(")) {
+            ops.push(t); // Paréntesis izquierdo a la pila
+        } else if (t.equals(")")) {
+            // Resolver hasta encontrar el paréntesis izquierdo
+            while (!ops.isEmpty() && !ops.peek().equals("(")) {
+                output.add(ops.pop());
+            }
+            if (!ops.isEmpty() && ops.peek().equals("(")) {
+                ops.pop();
+            }
+            // Si hay una función en la cima, también enviarla a la salida
+            if (!ops.isEmpty() && isFunc(ops.peek())) {
+                output.add(ops.pop());
             }
         }
-        while (!ops.isEmpty()) output.add(ops.pop());
-    System.out.println("DEBUG: evaluar - postfix=" + output.toString());
-        Stack<Double> stack = new Stack<>();
-        for (String t: output) {
-            if (isNumber(t)) stack.push(Double.valueOf(t));
-            else if (isOperator(t)) {
-                if (stack.size() < 2) throw new IllegalArgumentException("Operador faltante");
-                double b = stack.pop(), a = stack.pop();
-                switch (t) {
-                    case "+": stack.push(a+b); break;
-                    case "-": stack.push(a-b); break;
-                    case "*": stack.push(a*b); break;
-                    case "/": stack.push(a/b); break;
-                    case "^": stack.push(Math.pow(a,b)); break;
-                }
-            } else if (isFunc(t)) {
-                if (stack.isEmpty()) throw new IllegalArgumentException("Función sin argumento");
-                double a = stack.pop();
-                switch (t) {
-                    case "sin": stack.push(Math.sin(a)); break;
-                    case "cos": stack.push(Math.cos(a)); break;
-                    case "tan": stack.push(Math.tan(a)); break;
-                    case "asin": stack.push(Math.asin(a)); break;
-                    case "acos": stack.push(Math.acos(a)); break;
-                    case "atan": stack.push(Math.atan(a)); break;
-                    case "sqrt": stack.push(Math.sqrt(a)); break;
-                    case "cbrt": stack.push(Math.cbrt(a)); break;
-                    case "log": stack.push(Math.log10(a)); break;
-                    case "ln": stack.push(Math.log(a)); break;
-                    case "exp": stack.push(Math.exp(a)); break;
-                }
-            } else if (t.equals("!")) {
-                if (stack.isEmpty()) throw new IllegalArgumentException("Factorial sin operando");
-                int n = stack.pop().intValue();
-                stack.push((double) factorial(n));
-            }
-        }
-        if (stack.isEmpty()) throw new IllegalArgumentException("Expresión vacía");
-        return stack.pop();
     }
+    // Vaciar la pila de operadores
+    while (!ops.isEmpty()) {
+        output.add(ops.pop());
+    }
+
+    System.out.println("DEBUG: evaluar - postfix=" + output.toString());
+
+    // Evaluar la expresión en notación postfija
+    Stack<Double> stack = new Stack<>();
+    for (String t : output) {
+        if (isNumber(t)) {
+            stack.push(Double.valueOf(t));
+        } else if (isOperator(t)) {
+            if (stack.size() < 2) throw new IllegalArgumentException("Operador faltante");
+            double b = stack.pop(), a = stack.pop();
+            switch (t) {
+                case "+": stack.push(a + b); break;
+                case "-": stack.push(a - b); break;
+                case "*": stack.push(a * b); break;
+                case "/": stack.push(a / b); break;
+                case "^": stack.push(Math.pow(a, b)); break;
+            }
+        } else if (isFunc(t)) {
+            if (stack.isEmpty()) throw new IllegalArgumentException("Función sin argumento");
+            double a = stack.pop();
+            switch (t) {
+                case "sin": stack.push(Math.sin(a)); break;
+                case "cos": stack.push(Math.cos(a)); break;
+                case "tan": stack.push(Math.tan(a)); break;
+                case "asin": stack.push(Math.asin(a)); break;
+                case "acos": stack.push(Math.acos(a)); break;
+                case "atan": stack.push(Math.atan(a)); break;
+                case "sqrt": stack.push(Math.sqrt(a)); break;
+                case "cbrt": stack.push(Math.cbrt(a)); break;
+                case "log": stack.push(Math.log10(a)); break;
+                case "ln": stack.push(Math.log(a)); break;
+                case "exp": stack.push(Math.exp(a)); break;
+            }
+        } else if (t.equals("!")) {
+            if (stack.isEmpty()) throw new IllegalArgumentException("Factorial sin operando");
+            int n = stack.pop().intValue();
+            stack.push((double) factorial(n));
+        }
+    }
+
+    if (stack.isEmpty()) throw new IllegalArgumentException("Expresión vacía");
+    return stack.pop();
+}
 
     private String[] tokenize(String expr) {
     // No separar el signo + o - que forma parte de un exponente
