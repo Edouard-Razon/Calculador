@@ -129,6 +129,7 @@ public class Interfaz extends javax.swing.JFrame {
     expr = expr.replaceAll("(\\d+(?:\\.\\d+)?)[eE]\\s*([+-]?\\d+)", "$1E$2");
 
     System.out.println("DEBUG: evaluar - normalizada='" + expr + "'");
+
     // Tokenización y manejo de operadores
     String[] tokens = tokenize(expr);
     System.out.println("DEBUG: evaluar - tokens=" + java.util.Arrays.toString(tokens));
@@ -490,9 +491,6 @@ private void mostrarResultado() {
         btnPunto = new javax.swing.JButton();
         btn9 = new javax.swing.JButton();
         btn6 = new javax.swing.JButton();
-        btn3 = new javax.swing.JButton();
-        btnExp = new javax.swing.JButton();
-        btnDel = new
         btn3 = new javax.swing.JButton();
         btnExp = new javax.swing.JButton();
         btnDel = new javax.swing.JButton();
